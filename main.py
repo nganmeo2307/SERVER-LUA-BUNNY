@@ -110,24 +110,24 @@ def auto_clean_expired_keys():
         try:
             if db:
                 now = datetime.datetime.now()
-                docs = db.collection('keys').stream()
+                # Định dạng thời gian hiện tại thành chuỗi để query trực tiếp
+                now_str = now.strftime("%Y-%m-%d %H:%M:%S")
                 
-                for doc in docs:
-                    key_data = doc.to_dict()
+                # CHỈ lấy những key có thời gian hết hạn nhỏ hơn thời gian hiện tại
+                expired_docs = db.collection('keys').where('expiry', '<', now_str).stream()
+                
+                for doc in expired_docs:
                     key_id = doc.id
-                    try:
-                        expiry_str = key_data.get('expiry')
-                        if expiry_str:
-                            expiry_dt = datetime.datetime.strptime(expiry_str, "%Y-%m-%d %H:%M:%S")
-                            if now > expiry_dt:
-                                print(f"🗑️ Deleting expired key: {key_id}")
-                                db.collection('keys').document(key_id).delete()
-                                msg = f"🗑️ *Deleted expired key*\n`{key_id}`"
-                                send_admin_notify(msg)
-                    except Exception: pass
+                    print(f"🗑️ Deleting expired key: {key_id}")
+                    db.collection('keys').document(key_id).delete()
+                    msg = f"🗑️ *Deleted expired key*\n`{key_id}`"
+                    send_admin_notify(msg)
         except Exception as e:
             print(f"⚠️ Auto Clean thread error: {e}")
-        time.sleep(60)
+        
+        # Tăng thời gian chờ lên 2 tiếng (7200 giây) thay vì 60 giây
+        time.sleep(7200)
+
 
 # ================= API CHECK KEY =================
 @server.route('/check_key', methods=['POST'])
@@ -317,7 +317,7 @@ def create_vip(m):
     if not check_admin(m.from_user.id): return
     try:
         args = m.text.split()
-        if len(args) < 3: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/vip pubg 1d`")
+        if len(args) < 3: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/vip LUAPAK 1d`")
         
         game_id = args[1].lower()
         expiry, label = calculate_expiry(args[2])
@@ -343,7 +343,7 @@ def create_free(m):
     if not check_admin(m.from_user.id): return
     try:
         args = m.text.split()
-        if len(args) < 4: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/free pubg 10 1d`")
+        if len(args) < 4: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/free LUAPAK 10 1d`")
         
         game_id = args[1].lower()
         max_d = int(args[2])
@@ -420,7 +420,7 @@ def create_custom(m):
             db.collection('keys').document(db_id).set(data)
             bot.reply_to(m, f"🎁 *CUSTOM FREE {game_id.upper()} ({max_d} SLOTS - {label})*\n\n🔑 *KEY:* `{user_key_name}`", parse_mode="Markdown")
     except: 
-        bot.reply_to(m, "⚠️ Invalid custom syntax.\nVIP: `/custom vip pubg 1d KEYNAME`\nFREE: `/custom free pubg 10 1d KEYNAME`")
+        bot.reply_to(m, "⚠️ Invalid custom syntax.\nVIP: `/custom vip LUAPAK 1d KEYNAME`\nFREE: `/custom free LUAPAK 10 1d KEYNAME`")
 
 # --- LIST KEYS (CATEGORIZED BY GAME) ---
 @bot.message_handler(commands=['list'])
@@ -430,7 +430,7 @@ def list_keys(m):
     docs = db.collection('keys').stream()
     
     # 1. Group Keys by Game ID
-    grouped_keys = {} # {'PUBG': [str1, str2], 'LIENQUAN': [...]}
+    grouped_keys = {} # {'LUAPAKPUBG': [str1, str2], 'LIENQUAN': [...]}
     total_count = 0
     
     for doc in docs:
