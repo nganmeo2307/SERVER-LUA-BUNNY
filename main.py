@@ -317,7 +317,7 @@ def create_vip(m):
     if not check_admin(m.from_user.id): return
     try:
         args = m.text.split()
-        if len(args) < 3: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/vip LUAPAK 1d`")
+        if len(args) < 3: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/vip pubg 1d`")
         
         game_id = args[1].lower()
         expiry, label = calculate_expiry(args[2])
@@ -343,7 +343,7 @@ def create_free(m):
     if not check_admin(m.from_user.id): return
     try:
         args = m.text.split()
-        if len(args) < 4: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/free LUAPAK 10 1d`")
+        if len(args) < 4: return bot.reply_to(m, "⚠️ Invalid syntax. Example: `/free pubg 10 1d`")
         
         game_id = args[1].lower()
         max_d = int(args[2])
@@ -430,7 +430,7 @@ def list_keys(m):
     docs = db.collection('keys').stream()
     
     # 1. Group Keys by Game ID
-    grouped_keys = {} # {'LUAPAKPUBG': [str1, str2], 'LIENQUAN': [...]}
+    grouped_keys = {} # {'PUBG': [str1, str2], 'LIENQUAN': [...]}
     total_count = 0
     
     for doc in docs:
